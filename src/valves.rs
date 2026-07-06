@@ -17,23 +17,23 @@ use crate::config::{Config, DriveMode};
 
 pub enum Actuator {
     Ac {
-        pin: PinDriver<'static, AnyIOPin, Output>,
+        pin: PinDriver<'static, Output>,
         active_low: bool,
     },
     Latching {
-        open: PinDriver<'static, AnyIOPin, Output>,
-        close: PinDriver<'static, AnyIOPin, Output>,
+        open: PinDriver<'static, Output>,
+        close: PinDriver<'static, Output>,
         pulse_ms: u32,
     },
 }
 
 /// Build an output driver for a GPIO chosen at runtime by number.
 ///
-/// SAFETY: `AnyIOPin::new` bypasses the typed peripheral singletons, so the
+/// SAFETY: `AnyIOPin::steal` bypasses the typed peripheral singletons, so the
 /// caller must ensure each GPIO number is claimed exactly once. Config assigns
 /// distinct pins per valve; we never construct the same number twice.
-fn output(pin: u8) -> anyhow::Result<PinDriver<'static, AnyIOPin, Output>> {
-    let any = unsafe { AnyIOPin::new(pin as i32) };
+fn output(pin: u8) -> anyhow::Result<PinDriver<'static, Output>> {
+    let any = unsafe { AnyIOPin::steal(pin) };
     Ok(PinDriver::output(any)?)
 }
 

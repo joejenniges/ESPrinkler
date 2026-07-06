@@ -176,18 +176,18 @@ back on read, which is why valve on/off "sticks".
 The digit at index 6 of the `0x2A29` string is what sets the zone count
 (`int(string[6:7])` in `melnor_bluetooth`) — `valves` in `config.yaml` drives it.
 
-## Caveat
+## Status
 
-This was written against the `esp32-nimble` 0.8 / `esp-idf-svc` 0.49 APIs but
-**not compile-tested on hardware here** — if you're on a different crate
-version, these are the likely spots to need a small tweak:
+Builds clean for the `esp32` target against `esp-idf-svc` 0.52 / `esp-idf-hal`
+0.46 / `esp32-nimble` 0.12 (see `Cargo.lock`). **Not yet runtime-tested on a
+board** — it has never been flashed and run, so BLE behavior against a real
+Melnor client and the GPIO valve driving are still unverified on hardware.
 
-- BLE builder calls: `BLEAdvertisementData::manufacturer_data`,
-  `create_characteristic`, `NimbleProperties`, `on_write`/`recv_data`.
-- GPIO: runtime pin selection via `unsafe AnyIOPin::new(n)` + `PinDriver::output`.
+Notes:
+
 - YAML parsing uses `serde_yaml` (archived but stable, pure-Rust); swap for
   `serde_yml` / `serde_norway` if you prefer an actively-maintained fork.
-
-Pin the versions in `Cargo.toml` or adjust to your installed ones.
+- Runtime pin selection uses `unsafe AnyIOPin::steal(n)` — each GPIO number must
+  be assigned to only one valve (config enforces distinct pins).
 
 [`esp32-nimble`]: https://crates.io/crates/esp32-nimble

@@ -17,8 +17,8 @@ debug = true
 opt-level = "z"
 
 [dependencies]
-esp-idf-svc = "0.49"
-esp32-nimble = "0.8"
+esp-idf-svc = "0.52"
+esp32-nimble = "0.12"
 log = "0.4"
 anyhow = "1"
 serde = { version = "1", features = ["derive"] }
@@ -27,4 +27,4 @@ serde = { version = "1", features = ["derive"] }
 serde_yaml = "0.9"
 
 [build-dependencies]
-embuild = "0.32"
+embuild = "0.33"
