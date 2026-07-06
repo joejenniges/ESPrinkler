@@ -47,6 +47,28 @@ fn main() -> anyhow::Result<()> {
     esp_idf_svc::sys::link_patches();
     esp_idf_svc::log::EspLogger::initialize_default();
 
+    // Valve count is chosen at build time via MELNOR_VALVES (set by flash.sh),
+    // defaulting to a 4-valve unit. Each maps to a real Melnor SKU per
+    // melnor_bluetooth/constants.py (MODEL_NAME_MAP / MODEL_VALVE_MAP):
+    //   1 valve -> 93015 (internal code 5912)
+    //   2 valve -> 93100 (internal code 5910)
+    //   4 valve -> 93280 (internal code 5908)
+    // `name_string` is the 0x2A29 value: marketing number (5 chars) + pad byte
+    // + valve-count digit, so _read_model() gets model=[0:5], valves=[6:7].
+    // `model_byte` is the low manufacturer-data byte (0x59XX -> "59XX" model
+    // code); ignored by discovery today but kept authentic to the real advert.
+    let valves_env = option_env!("MELNOR_VALVES").unwrap_or("4");
+    let (name_string, model_byte): (&[u8], u8) = match valves_env {
+        "1" => (b"9301501", 0x12),
+        "2" => (b"9310002", 0x10),
+        "4" => (b"9328004", 0x08),
+        other => {
+            log::warn!("unknown MELNOR_VALVES='{other}', defaulting to 4 valves");
+            (b"9328004", 0x08)
+        }
+    };
+    let model = core::str::from_utf8(&name_string[..5]).unwrap_or("?????");
+
     let ble_device = BLEDevice::take();
     let ble_advertising = ble_device.get_advertising();
     let server = ble_device.get_server();
@@ -63,13 +85,12 @@ fn main() -> anyhow::Result<()> {
 
     // Device Information Service holds the manufacturer-name string that
     // _read_model() parses: model = string[0:5], valve_count = int(string[6:7]).
-    // "5907004" -> model "59070", valve_count 4. The '4' at index 6 is what
-    // makes HA create four zones.
+    // The digit at index 6 is what makes HA create that many zones.
     let dis = server.create_service(uuid16(0x180A));
     let name = dis
         .lock()
         .create_characteristic(uuid16(MANUFACTURER_NAME), NimbleProperties::READ);
-    name.lock().set_value(b"5907004");
+    name.lock().set_value(name_string);
 
     let svc = server.create_service(uuid16(MELNOR_SERVICE));
 
@@ -125,16 +146,16 @@ fn main() -> anyhow::Result<()> {
     updated.lock().set_value(&[0u8; 4]);
 
     // Manufacturer data: company id 13 little-endian (0x0D 0x00) + payload
-    // starting 0x59. 0x59 0x07 mimics a model-5907 4-valve unit. This is the
-    // match key for both HA's manifest matcher and the library scanner.
+    // starting 0x59. The 0x59 start is the match key for both HA's manifest
+    // matcher and the library scanner; the model_byte follows for authenticity.
     ble_advertising.lock().set_data(
         BLEAdvertisementData::new()
             .name("YM_Timer")
-            .manufacturer_data(&[0x0D, 0x00, 0x59, 0x07]),
+            .manufacturer_data(&[0x0D, 0x00, 0x59, model_byte]),
     )?;
     ble_advertising.lock().start()?;
 
-    log::info!("Melnor emulator advertising; waiting for Home Assistant");
+    log::info!("Emulating {model} ({valves_env}-valve Melnor); advertising, waiting for Home Assistant");
     loop {
         FreeRtos::delay_ms(1000);
     }

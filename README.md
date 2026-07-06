@@ -37,18 +37,37 @@ espup install          # installs the `esp` Rust toolchain + ESP-IDF deps
 ## Build + flash
 
 ```sh
-./flash.sh              # defaults to esp32s3
-./flash.sh esp32c3      # or any chip from the table
-./flash.sh esp32 -- --port /dev/tty.usbserial-XXXX
+./flash.sh              # esp32s3, 4-valve (default)
+./flash.sh esp32c3      # any chip from the table, 4-valve
+./flash.sh esp32s3 1    # 1-valve unit
+./flash.sh esp32s3 2    # 2-valve unit
+./flash.sh esp32 4 --port /dev/tty.usbserial-XXXX
 ```
 
-`flash.sh` sets `MCU` and `CARGO_BUILD_TARGET` for the chosen chip, then runs
-`cargo run --release` (which builds, flashes, and opens the serial monitor).
-For a build only:
+`flash.sh` sets `MCU`, `CARGO_BUILD_TARGET`, and `MELNOR_VALVES` for the chosen
+chip/valve count, then runs `cargo run --release` (which builds, flashes, and
+opens the serial monitor). For a build only:
 
 ```sh
-MCU=esp32c6 CARGO_BUILD_TARGET=riscv32imac-esp-espidf cargo build --release
+MCU=esp32c6 CARGO_BUILD_TARGET=riscv32imac-esp-espidf MELNOR_VALVES=2 \
+  cargo build --release
 ```
+
+### Valve count
+
+The second argument selects how many zones the emulated timer exposes. Each
+maps to a real Melnor SKU (see `melnor_bluetooth/constants.py`):
+
+| Valves | Model (0x2A29) | Internal code |
+|--------|----------------|---------------|
+| 1      | `93015`        | 5912          |
+| 2      | `93100`        | 5910          |
+| 4      | `93280`        | 5908          |
+
+Valve count is baked in at build time (`MELNOR_VALVES`, read via `option_env!`),
+so changing it re-flashes new firmware. The GATT layout itself doesn't change —
+real 1/2-valve timers still use the 4-valve byte format — only the reported
+model string and zone count differ.
 
 ## Verifying discovery
 
@@ -67,7 +86,7 @@ read, which is why valve on/off "sticks".
 
 | UUID     | Dir | Meaning                                                        |
 |----------|-----|----------------------------------------------------------------|
-| `0x2A29` | R   | Manufacturer string `"5907004"` → model `59070`, **4 valves**  |
+| `0x2A29` | R   | Manufacturer string, e.g. `"9328004"` → model `93280`, **4 valves** |
 | `0xEC08` | R   | Battery, 2 bytes voltage-encoded (`02 D8` ≈ 90%)               |
 | `0xEC0B` | R/W | 4×5 bytes: `is_watering`, minutes, minutes — HA writes to toggle |
 | `0xEC06` | R   | 4×5 bytes: per-valve manual end timestamps (idle: zero)        |
@@ -75,9 +94,9 @@ read, which is why valve on/off "sticks".
 | `0xEC0F`–`0xEC12` | R/W | 8 bytes each: `>BIHB` frequency schedule per valve   |
 | `0xEC09` | R/W | u32 timestamp HA writes on `push_state`                       |
 
-The `4` at index 6 of the `0x2A29` string is what makes HA create four zones
-(`int(string[6:7])` in `melnor_bluetooth`), so don't change it unless you want
-a 1/2-valve device.
+The digit at index 6 of the `0x2A29` string is what sets the zone count
+(`int(string[6:7])` in `melnor_bluetooth`) — the valve-count argument to
+`flash.sh` drives it.
 
 ## Caveat
 
