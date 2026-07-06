@@ -1,0 +1,15 @@
+# Rust / Cargo
+/target
+# Cargo.lock is committed — this is a firmware binary and we want reproducible builds.
+
+# esp-idf build artifacts
+/.embuild
+sdkconfig
+sdkconfig.old
+/build
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store

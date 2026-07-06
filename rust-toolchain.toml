@@ -1,0 +1,5 @@
+# The `esp` fork toolchain targets both Xtensa (esp32/esp32s3) and RISC-V
+# (esp32c*/esp32h2) chips, so a single channel covers every supported board.
+# Install with: espup install
+[toolchain]
+channel = "esp"

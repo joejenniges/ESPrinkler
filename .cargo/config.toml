@@ -1,0 +1,35 @@
+# Default target. Override per-build with CARGO_BUILD_TARGET (see flash.sh),
+# which takes precedence over this value.
+[build]
+target = "xtensa-esp32s3-espidf"
+
+# Identical build settings for every supported ESP target, so switching chips
+# only requires changing CARGO_BUILD_TARGET + MCU (nothing else here changes).
+[target.xtensa-esp32-espidf]
+linker = "ldproxy"
+runner = "espflash flash --monitor"
+rustflags = ["--cfg", "espidf_time64"]
+
+[target.xtensa-esp32s3-espidf]
+linker = "ldproxy"
+runner = "espflash flash --monitor"
+rustflags = ["--cfg", "espidf_time64"]
+
+[target.riscv32imc-esp-espidf]
+linker = "ldproxy"
+runner = "espflash flash --monitor"
+rustflags = ["--cfg", "espidf_time64"]
+
+[target.riscv32imac-esp-espidf]
+linker = "ldproxy"
+runner = "espflash flash --monitor"
+rustflags = ["--cfg", "espidf_time64"]
+
+[unstable]
+build-std = ["std", "panic_abort"]
+
+# MCU is read by esp-idf-svc's build script to select the chip. Cargo does not
+# override an env var already set in the shell, so flash.sh's MCU=... wins.
+[env]
+MCU = "esp32s3"
+ESP_IDF_VERSION = "v5.2"
