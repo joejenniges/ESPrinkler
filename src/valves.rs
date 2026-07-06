@@ -15,6 +15,11 @@ use esp_idf_svc::hal::gpio::{AnyIOPin, Output, PinDriver};
 
 use crate::config::{Config, DriveMode};
 
+/// Fixed settle gap between consecutive latching valves during the boot
+/// close-all sequence, so their inrush currents don't stack and spike the
+/// supply. Deliberately not configurable.
+const STARTUP_CLOSE_GAP_MS: u32 = 100;
+
 pub enum Actuator {
     Ac {
         pin: PinDriver<'static, Output>,
@@ -72,12 +77,18 @@ pub fn build(config: &Config) -> anyhow::Result<Vec<Actuator>> {
     }
 
     // Latching solenoids power up in an unknown position; pulse them all closed
-    // so our tracked state (off) matches the physical valve.
+    // so our tracked state (off) matches the physical valve. Fire sequentially
+    // with a settle gap between valves so inrush currents don't stack.
+    let mut first = true;
     for actuator in actuators.iter_mut() {
         if let Actuator::Latching {
             close, pulse_ms, ..
         } = actuator
         {
+            if !first {
+                FreeRtos::delay_ms(STARTUP_CLOSE_GAP_MS);
+            }
+            first = false;
             close.set_high()?;
             FreeRtos::delay_ms(*pulse_ms);
             close.set_low()?;
