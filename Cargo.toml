@@ -21,6 +21,10 @@ esp-idf-svc = "0.49"
 esp32-nimble = "0.8"
 log = "0.4"
 anyhow = "1"
+serde = { version = "1", features = ["derive"] }
+# Archived but stable and pure-Rust, so it cross-compiles cleanly to the ESP
+# targets. Swap for serde_yml / serde_norway if you want an active fork.
+serde_yaml = "0.9"
 
 [build-dependencies]
 embuild = "0.32"
