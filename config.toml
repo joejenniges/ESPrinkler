@@ -1,0 +1,28 @@
+# ESPrinkler configuration — baked into the firmware at build time.
+# Edit and re-run ./flash.sh to apply. WiFi credentials are NOT here; they're
+# set at runtime through the setup web page and stored in NVS.
+
+# SoftAP shown for provisioning when no home WiFi is saved yet.
+[ap]
+ssid = "ESPrinkler-Setup"
+password = "sprinkler"      # >= 8 chars for WPA2, or "" for an open network
+
+# mDNS, advertised once joined to home WiFi.
+[mdns]
+hostname = "esprinkler"     # reachable as esprinkler.local
+service = "_sprinkler"      # advertised as _sprinkler._tcp
+
+# Valves, in order. Two kinds:
+#   type = "ac"       -> one output "pin" drives a relay (24VAC valve)
+#   type = "latching" -> "open_pin"/"close_pin" pulse a DC latching solenoid
+[[valve]]
+name = "Zone 1"
+type = "ac"
+pin = 4
+active_low = false
+
+[[valve]]
+name = "Zone 2"
+type = "ac"
+pin = 5
+active_low = false

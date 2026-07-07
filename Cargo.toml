@@ -1,12 +1,12 @@
 [package]
-name = "melnor-esp"
+name = "esprinkler"
 version = "0.1.0"
 edition = "2021"
 resolver = "2"
 rust-version = "1.77"
 
 [[bin]]
-name = "melnor-esp"
+name = "esprinkler"
 harness = false
 
 [profile.release]
@@ -18,13 +18,15 @@ opt-level = "z"
 
 [dependencies]
 esp-idf-svc = "0.52"
-esp32-nimble = "0.12"
 log = "0.4"
 anyhow = "1"
 serde = { version = "1", features = ["derive"] }
-# Archived but stable and pure-Rust, so it cross-compiles cleanly to the ESP
-# targets. Swap for serde_yml / serde_norway if you want an active fork.
-serde_yaml = "0.9"
+toml = "0.8"
 
 [build-dependencies]
 embuild = "0.33"
+
+# TODO(mDNS): esp_idf_svc::mdns needs the managed component below. Adding it needs
+# a clean esp-idf-sys rebuild and a concrete version; wire up in a follow-up.
+# [[package.metadata.esp-idf-sys.extra_components]]
+# remote_component = { name = "espressif/mdns", version = "1.2" }
